@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F7F9">
+<title>Campus Bus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  /* Design foundation (Figma F01) */
+  :root {
+    --navy: #142D42; --teal: #007F73; --teal-soft: #E3F2F0; --cloud: #F4F7F9; --white: #FFFFFF;
+    --amber: #8D5700; --amber-soft: #FDF0D8; --red: #AC3545; --red-soft: #F8E6E9;
+    --grey: #5F6B76; --grey-soft: #E9EDF0; --line: #E2E7EB; --muted: #5F6B76;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #DDE3E7; }
+  body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--navy); font-size: 15px; }
+  button { font: inherit; color: inherit; }
+
+  #app { max-width: 430px; margin: 0 auto; min-height: 100%; background: var(--cloud); position: relative;
+         display: flex; flex-direction: column; box-shadow: 0 0 30px rgba(20,45,66,.12); }
+  main { flex: 1; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+  /* Header */
+  .top { background: var(--white); padding: calc(env(safe-area-inset-top) + 18px) 24px 16px; }
+  .top-row { display: flex; align-items: center; gap: 12px; }
+  .top h1 { font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -.3px; line-height: 1.15; }
+  .top .subtitle { color: var(--muted); font-size: 14px; margin: 6px 0 8px; }
+  .backbtn { border: 0; background: none; padding: 6px 4px 6px 0; cursor: pointer; display: flex; }
+  .demo { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .3px; color: var(--grey);
+          background: var(--grey-soft); padding: 4px 10px; border-radius: 999px; }
+  .demo.src { margin-left: 4px; }
+
+  .body { padding: 16px 24px 8px; }
+  .card { background: var(--white); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+  h2 { font-size: 18px; font-weight: 700; margin: 0; }
+  h3 { font-size: 22px; font-weight: 700; margin: 4px 0 2px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 10px; }
+  .note { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+
+  /* Search */
+  .search { position: relative; margin-bottom: 14px; }
+  .search input { width: 100%; height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--white);
+                  padding: 0 14px 0 44px; font: inherit; color: var(--navy); outline: none; }
+  .search input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft); }
+  .search svg { position: absolute; left: 14px; top: 14px; }
+  .results { background: var(--white); border: 1px solid var(--line); border-radius: 12px; margin-top: 6px; overflow: hidden; }
+  .results button { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line);
+                    background: none; padding: 12px 14px; cursor: pointer; }
+  .results button:last-child { border-bottom: 0; }
+
+  /* Map card */
+  .mapcard { position: relative; height: 230px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: #E8EDF0; margin-bottom: 14px; }
+  .mapcard.small { height: 170px; }
+  .mapcard .map { position: absolute; inset: 0; }
+  .maptag { position: absolute; z-index: 500; left: 10px; top: 10px; background: var(--white); border-radius: 999px;
+            padding: 5px 11px; font-size: 12px; font-weight: 600; box-shadow: 0 1px 4px rgba(20,45,66,.15); }
+  .locate { position: absolute; z-index: 500; right: 10px; bottom: 10px; width: 38px; height: 38px; border-radius: 10px;
+            border: 0; background: var(--white); box-shadow: 0 1px 4px rgba(20,45,66,.2); cursor: pointer; display: grid; place-items: center; }
+  .bus-pin { width: 32px; height: 32px; border-radius: 9px; background: var(--teal); display: grid; place-items: center;
+             box-shadow: 0 2px 6px rgba(20,45,66,.35); border: 2px solid #fff; }
+  .bus-pin.STALE { background: var(--amber); }
+  .bus-pin.OFFLINE, .bus-pin.NO_DATA, .bus-pin.NOT_IN_SERVICE { background: #8A949C; opacity: .75; }
+  .bus-pin span { color: #fff; font-size: 10px; font-weight: 800; }
+
+  /* Lists */
+  .item { display: flex; align-items: center; gap: 12px; background: var(--white); border: 1px solid var(--line);
+          border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; width: 100%; text-align: left; }
+  .busicon { width: 40px; height: 40px; border-radius: 10px; background: var(--teal-soft); display: grid; place-items: center; flex: none; }
+  .busicon.STALE { background: var(--amber-soft); }
+  .busicon.OFFLINE, .busicon.NO_DATA, .busicon.NOT_IN_SERVICE { background: var(--grey-soft); }
+  .item .t { font-weight: 600; font-size: 15px; }
+  .eta { color: var(--teal); font-weight: 700; font-size: 18px; white-space: nowrap; text-align: right; }
+  .eta.approx { color: var(--amber); }
+  .eta small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); }
+  .eta.none { color: var(--muted); font-size: 13px; font-weight: 500; max-width: 110px; }
+
+  /* Chips (Figma "Interface elements") */
+  .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .chip.ACTIVE, .chip.live { color: var(--teal); background: var(--teal-soft); }
+  .chip.STALE { color: var(--amber); background: var(--amber-soft); }
+  .chip.OFFLINE, .chip.NO_DATA, .chip.NOT_IN_SERVICE, .chip.none { color: var(--grey); background: var(--grey-soft); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
+
+  /* Big ETA card (S03) */
+  .big { font-size: 40px; font-weight: 800; color: var(--teal); letter-spacing: -1px; }
+  .big.approx { color: var(--amber); }
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .fact { background: var(--cloud); border-radius: 10px; padding: 8px 10px; }
+  .fact b { display: block; font-size: 14px; }
+  .fact span { font-size: 12px; color: var(--muted); }
+
+  /* Buttons */
+  .btn { display: block; width: 100%; height: 48px; border-radius: 12px; border: 1px solid var(--teal); background: var(--teal);
+         color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 10px; }
+  .btn.secondary { background: var(--white); color: var(--navy); border-color: var(--line); }
+  .btn.on { background: var(--teal-soft); color: var(--teal); border-color: var(--teal-soft); }
+  .link { display: flex; align-items: center; justify-content: space-between; color: var(--teal); font-weight: 600; font-size: 14px;
+          border: 0; background: none; padding: 10px 0 0; width: 100%; cursor: pointer; }
+
+  /* Route card (S04) */
+  .route { position: relative; padding-left: 20px; cursor: pointer; }
+  .route::before { content: ""; position: absolute; left: 12px; top: 14px; bottom: 14px; width: 4px; border-radius: 2px; background: var(--c, var(--teal)); }
+  .route .row { padding-left: 4px; }
+  .info { display: flex; gap: 10px; background: var(--teal-soft); color: var(--teal); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.45; }
+  .warn { display: flex; gap: 10px; align-items: flex-start; background: var(--amber-soft); color: var(--amber); border-radius: 12px; padding: 12px 14px; font-size: 13px; margin: 12px 0; }
+
+  /* Timeline (S05) */
+  .timeline { position: relative; margin: 6px 0 16px; }
+  .stopline { display: flex; gap: 14px; padding: 8px 0; cursor: pointer; position: relative; }
+  .stopline::before { content: ""; position: absolute; left: 6px; top: 22px; bottom: -10px; width: 3px; background: var(--c, var(--teal)); }
+  .stopline:last-child::before { display: none; }
+  .stopline .node { width: 15px; height: 15px; border-radius: 50%; border: 3px solid var(--c, var(--teal)); background: #fff; flex: none; margin-top: 3px; z-index: 1; }
+
+  /* Empty / outdated state (E05) */
+  .state { text-align: center; padding: 24px 8px 8px; }
+  .state .halo { width: 84px; height: 84px; border-radius: 50%; background: var(--amber-soft); display: grid; place-items: center; margin: 0 auto 18px; }
+  .state h3 { font-size: 22px; }
+
+  /* Form (plan trip) */
+  select { width: 100%; height: 48px; border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 0 12px;
+           font: inherit; color: var(--navy); margin: 6px 0 14px; }
+
+  /* Bottom navigation */
+  nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; z-index: 900;
+        background: var(--white); border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(4, 1fr);
+        padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  nav a { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: var(--grey); text-decoration: none; }
+  nav a .pill { width: 52px; height: 30px; border-radius: 999px; display: grid; place-items: center; }
+  nav a.on { color: var(--teal); font-weight: 600; }
+  nav a.on .pill { background: var(--teal-soft); }
+  nav a svg { stroke: currentColor; }
+
+  .toast { position: fixed; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top) + 12px); z-index: 2000;
+           width: calc(100% - 32px); max-width: 398px; background: var(--navy); color: #fff; border-radius: 14px; padding: 14px 16px;
+           font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); display: none; }
+  .offline-bar { background: var(--red); color: #fff; font-size: 13px; padding: 8px 24px; display: none; }
+  .leaflet-container { font-family: inherit; background: #E8EDF0; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="offline-bar" id="offlineBar">Can't reach the server. Showing the last known data.</div>
+  <main id="view"></main>
+  <nav id="nav">
+    <a href="#/map" data-tab="map"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg></span>Map</a>
+    <a href="#/routes" data-tab="routes"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 010 6H9a3 3 0 000 6h6.5"/></svg></span>Routes</a>
+    <a href="#/plan" data-tab="plan"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></span>Plan trip</a>
+    <a href="#/alerts" data-tab="alerts"><span class="pill"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></svg></span>Alerts</a>
+  </nav>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+// =====================================================================
+// Data and helpers
+// =====================================================================
+const API = "/api";
+const S = { routes: [], stops: [], buses: [], busesAt: 0, health: null, arrivals: {}, arrivalsAt: {} };
+const CHIP = { ACTIVE: "In service", STALE: "Outdated", OFFLINE: "Offline", NOT_IN_SERVICE: "Not in service", NO_DATA: "No data" };
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clean = (name) => String(name || "").replace(/\s*\(Demo\)$/, "");
+const route = (id) => S.routes.find((r) => r.routeId === id);
+const stop = (id) => S.stops.find((s) => s.stopId === id);
+const bus = (id) => S.buses.find((b) => b.busId === id);
+const busName = (b) => `${clean(b.label)}${route(b.routeId) ? " · " + clean(route(b.routeId).name) : ""}`;
+const chip = (status) => `<span class="chip ${esc(status)}"><span class="dot"></span>${esc(CHIP[status] || status)}</span>`;
+
+async function getJSON(path) {
+  const res = await fetch(API + path, { cache: "no-store" });
+  if (!res.ok) throw new Error(path + " " + res.status);
+  return res.json();
+}
+
+function ageNow(ageSeconds, at) { return ageSeconds == null ? null : ageSeconds + Math.round((Date.now() - at) / 1000); }
+function updatedText(sec) {
+  if (sec == null) return "No location received";
+  if (sec < 60) return `Updated ${sec} second${sec === 1 ? "" : "s"} ago`;
+  if (sec < 3600) return `Updated ${Math.floor(sec / 60)} min ago`;
+  return `Updated ${Math.floor(sec / 3600)} h ago`;
+}
+function clock(iso) { return iso ? new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—"; }
+
+function etaBlock(a) {
+  if (a.etaMinutes == null) return `<div class="eta none">${esc(a.unavailableReason === "No recent location" ? "ETA unavailable" : (a.unavailableReason || "No estimate"))}</div>`;
+  if (a.remainingDistanceM === 0) return `<div class="eta">At stop</div>`;
+  const mins = a.etaMinutes < 1 ? "<1" : Math.round(a.etaMinutes);
+  return `<div class="eta ${a.etaIsApproximate ? "approx" : ""}">${a.etaIsApproximate ? "~" : ""}${mins} min<small>${(a.remainingDistanceM / 1000).toFixed(1)} km</small></div>`;
+}
+
+const ICON = {
+  back: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#142D42" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
+  search: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5F6B76" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`,
+  bus: (c = "#007F73") => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14M8 20.5v-3M16 20.5v-3"/><circle cx="8.5" cy="14.3" r=".8" fill="${c}"/><circle cx="15.5" cy="14.3" r=".8" fill="${c}"/></svg>`,
+  locate: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#142D42" stroke-width="2"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="#142D42"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>`,
+  chevron: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007F73" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>`,
+  clock: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#8D5700" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
+  warn: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8D5700" stroke-width="2" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></svg>`,
+  info: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007F73" stroke-width="2"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.5"/></svg>`,
+};
+
+function header(title, subtitle, { back = false } = {}) {
+  const mode = S.health ? (S.health.mode === "oracle" ? "ORACLE DB" : "LOCAL DATA") : "";
+  return `<div class="top">
+    <div class="top-row">${back ? `<button class="backbtn" data-back aria-label="Back">${ICON.back}</button>` : ""}<h1>${esc(title)}</h1></div>
+    ${subtitle ? `<div class="subtitle">${esc(subtitle)}</div>` : `<div style="height:8px"></div>`}
+    <span class="demo">DEMO DATA</span>${mode ? `<span class="demo src" title="${esc(S.health.notice)}">${mode}</span>` : ""}
+  </div>`;
+}
+
+// =====================================================================
+// Maps (real street map, Leaflet + OpenStreetMap)
+// =====================================================================
+let maps = [];
+function mountMap(el, { routeId = null, focus = null } = {}) {
+  const m = L.map(el, { zoomControl: false, attributionControl: true, scrollWheelZoom: false });
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(m);
+  const shown = routeId ? S.routes.filter((r) => r.routeId === routeId) : S.routes;
+  const bounds = [];
+  for (const r of shown) {
+    L.polyline(r.isLoop ? [...r.path, r.path[0]] : r.path, { color: r.colour, weight: 5, opacity: .85 }).addTo(m);
+    bounds.push(...r.path);
+  }
+  const stopIds = new Set(shown.flatMap((r) => r.stops.map((s) => s.stopId)));
+  for (const s of S.stops.filter((x) => stopIds.has(x.stopId))) {
+    L.circleMarker([s.latitude, s.longitude], { radius: 6, color: "#142D42", weight: 2, fillColor: "#fff", fillOpacity: 1 })
+      .addTo(m).bindTooltip(clean(s.name)).on("click", () => go(`#/stop/${s.stopId}`));
+  }
+  const entry = { m, routeId, markers: {} };
+  maps.push(entry);
+  if (focus) m.setView(focus, 17); else if (bounds.length) m.fitBounds(bounds, { padding: [24, 24] });
+  drawBusesOn(entry);
+  const btn = el.parentElement.querySelector(".locate");
+  if (btn) btn.onclick = () => (bounds.length ? m.fitBounds(bounds, { padding: [24, 24] }) : null);
+  return m;
+}
+function drawBusesOn(entry) {
+  for (const b of S.buses) {
+    const onRoute = !entry.routeId || b.routeId === entry.routeId;
+    if (b.latitude == null || !onRoute) continue;
+    const icon = L.divIcon({ className: "", iconSize: [32, 32], iconAnchor: [16, 16],
+      html: `<div class="bus-pin ${esc(b.displayStatus)}"><span>${esc(b.busId.replace("BUS-", ""))}</span></div>` });
+    if (entry.markers[b.busId]) entry.markers[b.busId].setLatLng([b.latitude, b.longitude]).setIcon(icon);
+    else entry.markers[b.busId] = L.marker([b.latitude, b.longitude], { icon, zIndexOffset: 1000 }).addTo(entry.m)
+      .on("click", () => go(`#/bus/${b.busId}`));
+  }
+}
+function clearMaps() { maps.forEach((e) => e.m.remove()); maps = []; }
+const mapCard = (tag, small = false) => `<div class="mapcard ${small ? "small" : ""}"><div class="map"></div>
+  ${tag ? `<span class="maptag">${esc(tag)}</span>` : ""}<button class="locate" aria-label="Show whole route">${ICON.locate}</button></div>`;
+
+// =====================================================================
+// Alerts (S08-S10): notify once per approach, saved on this phone
+// =====================================================================
+const ALERT_MIN = 2;  // notify when the bus is this many minutes away
+function loadAlerts() { try { return JSON.parse(localStorage.getItem("busAlerts") || "[]"); } catch { return []; } }
+function saveAlerts(a) { try { localStorage.setItem("busAlerts", JSON.stringify(a)); } catch {} }
+let alerts = loadAlerts();
+const hasAlert = (stopId, busId = null) => alerts.some((a) => a.stopId === stopId && a.busId === busId);
+function toggleAlert(stopId, busId = null) {
+  if (hasAlert(stopId, busId)) alerts = alerts.filter((a) => !(a.stopId === stopId && a.busId === busId));
+  else {
+    alerts.push({ stopId, busId, fired: {} });
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
+    toast(`Alert set: we'll tell you when ${busId ? clean(bus(busId)?.label) : "a bus"} is about ${ALERT_MIN} min from ${clean(stop(stopId)?.name)}.`);
+  }
+  saveAlerts(alerts);
+  render();
+}
+async function checkAlerts() {
+  for (const a of alerts) {
+    let list;
+    try { list = await getJSON(`/stops/${a.stopId}/arrivals`); } catch { continue; }
+    for (const x of list) {
+      if (a.busId && x.busId !== a.busId) continue;
+      const close = x.displayStatus === "ACTIVE" && x.etaMinutes != null && x.etaMinutes <= ALERT_MIN;
+      if (close && !a.fired[x.busId]) {
+        a.fired[x.busId] = true;  // once per approach (Roy's duplicate-alert rule)
+        const msg = `${clean(x.label)} is about ${x.etaMinutes < 1 ? "1" : Math.round(x.etaMinutes)} min from ${clean(stop(a.stopId)?.name)}.`;
+        toast(msg);
+        try { if ("Notification" in window && Notification.permission === "granted") new Notification("Bus approaching", { body: msg }); } catch {}
+      } else if (!close && a.fired[x.busId] && (x.etaMinutes == null || x.etaMinutes > ALERT_MIN + 1)) {
+        a.fired[x.busId] = false;  // bus has left; ready for its next approach
+      }
+    }
+  }
+  saveAlerts(alerts);
+}
+let toastTimer;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.style.display = "none"), 6000); }
+
+// =====================================================================
+// Screens
+// =====================================================================
+const views = {
+  // S01 Campus Bus
+  map: {
+    tab: "map",
+    html: () => `${header("Campus Bus", "Your next ride, without the guesswork.")}
+      <div class="body">
+        <div class="search">${ICON.search}<input id="q" placeholder="Where are you heading?" autocomplete="off"><div id="results"></div></div>
+        ${mapCard("All routes · Live demo")}
+        <div id="nearby"></div>
+        <div class="section-head"><h2>Buses now</h2><span class="muted" id="liveCount"></span></div>
+        <div id="buslist"></div>
+        <p class="note">Arrival times are estimates. Locations come from demo GPS data.</p>
+      </div>`,
+    mount() {
+      mountMap($(".map"));
+      $("#q").addEventListener("input", (e) => {
+        const q = e.target.value.trim().toLowerCase();
+        const hits = q ? S.stops.filter((s) => s.name.toLowerCase().includes(q)) : [];
+        $("#results").innerHTML = hits.length ? `<div class="results">${hits.map((s) =>
+          `<button data-go="#/stop/${esc(s.stopId)}"><b>${esc(clean(s.name))}</b><div class="muted">${s.routes.map((r) => esc(clean(route(r)?.name))).join(", ")}</div></button>`).join("")}</div>`
+          : q ? `<div class="results"><div class="muted" style="padding:12px 14px">No stop matches "${esc(q)}".</div></div>` : "";
+      });
+    },
+    async update() {
+      // Nearby stop card: the stop with the soonest live arrival
+      let best = null;
+      for (const s of S.stops) {
+        const list = S.arrivals[s.stopId] || [];
+        const first = list.find((a) => a.etaMinutes != null && a.displayStatus === "ACTIVE" && a.remainingDistanceM > 0);
+        if (first && (!best || first.etaMinutes < best.a.etaMinutes)) best = { s, a: first };
+      }
+      $("#nearby").innerHTML = best ? `<div class="card" style="cursor:pointer" data-go="#/stop/${esc(best.s.stopId)}">
+          <div class="label">Next bus</div>
+          <div class="row"><div class="grow"><h3>${esc(clean(best.s.name))}</h3><div class="muted">${esc(busName(bus(best.a.busId) || best.a))}</div></div>
+            <div class="eta" style="font-size:26px">${best.a.etaMinutes < 1 ? "<1" : Math.round(best.a.etaMinutes)} min<small>estimated</small></div></div>
+          <div class="muted" style="margin-top:10px"><span class="dot" style="color:var(--teal)"></span> Location ${esc(updatedText(ageNow(best.a.ageSeconds, S.arrivalsAt[best.s.stopId])).toLowerCase())}</div>
+          <button class="link" data-go="#/stop/${esc(best.s.stopId)}">View arrivals ${ICON.chevron}</button></div>`
+        : `<div class="card"><div class="label">Next bus</div><h3>No live buses right now</h3><div class="muted">Check back soon, or choose a stop to see last known positions.</div></div>`;
+      const live = S.buses.filter((b) => b.displayStatus === "ACTIVE").length;
+      $("#liveCount").textContent = `${live} of ${S.buses.length} live`;
+      $("#buslist").innerHTML = S.buses.map(busItem).join("");
+    },
+  },
+
+  // S02 Village A (a stop)
+  stop: {
+    tab: "map",
+    html: (id) => { const s = stop(id); if (!s) return notFound("stop");
+      return `${header(clean(s.name), `Stop ${s.stopId} · ${s.routes.map((r) => clean(route(r)?.name)).join(", ")}`, { back: true })}
+      <div class="body">
+        ${mapCard(s.routes.map((r) => clean(route(r)?.name)).join(" · "), true)}
+        <div class="section-head"><h2>Upcoming buses</h2><span class="chip live"><span class="dot"></span>Live demo</span></div>
+        <div id="arrivals"><div class="muted">Loading…</div></div>
+        <p class="note">Arrival times are estimates. "~" means the bus's position is a little old.</p>
+        <button class="btn ${hasAlert(id) ? "on" : ""}" data-alert="${esc(id)}">${hasAlert(id) ? "Alert on · tap to cancel" : "Notify me before arrival"}</button>
+        ${s.routes[0] ? `<button class="btn secondary" data-go="#/route/${esc(s.routes[0])}">View this route</button>` : ""}
+      </div>`; },
+    mount(id) { const s = stop(id); if (s) mountMap($(".map"), { focus: [s.latitude, s.longitude] }); },
+    async update(id) {
+      const list = S.arrivals[id] = await getJSON(`/stops/${id}/arrivals`); S.arrivalsAt[id] = Date.now();
+      $("#arrivals").innerHTML = list.length ? list.map((a) => `<button class="item" data-go="#/bus/${esc(a.busId)}">
+          <div class="busicon ${esc(a.displayStatus)}">${ICON.bus(a.displayStatus === "ACTIVE" ? "#007F73" : a.displayStatus === "STALE" ? "#8D5700" : "#5F6B76")}</div>
+          <div class="grow"><div class="t">${esc(clean(a.label))} · ${esc(clean(a.routeName))}</div>
+            <div class="muted">${a.displayStatus === "ACTIVE" ? esc(updatedText(ageNow(a.ageSeconds, S.arrivalsAt[id]))) : chip(a.displayStatus) + " " + esc(updatedText(ageNow(a.ageSeconds, S.arrivalsAt[id])))}</div></div>
+          ${etaBlock(a)}</button>`).join("") : `<div class="card muted">No buses serve this stop.</div>`;
+    },
+  },
+
+  // S03 Bus A  (+ E05 Location outdated)
+  bus: {
+    tab: "map",
+    html: (id) => { const b = bus(id); if (!b) return notFound("bus");
+      return `${header(clean(b.label), `${b.busId} · ${clean(route(b.routeId)?.name) || "No route assigned"}`, { back: true })}
+      <div class="body" id="busbody"></div>`; },
+    mount() {},
+    async update(id) {
+      const d = await getJSON(`/buses/${id}`), b = d.bus, at = Date.now();
+      const age = ageNow(b.ageSeconds, at);
+      const next = d.stops.find((s) => s.remainingDistanceM > 0) || d.stops[0];
+      const after = next ? d.stops[(d.stops.indexOf(next) + 1) % d.stops.length] : null;
+      const body = $("#busbody");
+      const firstPaint = !body.dataset.ready;
+      if (["OFFLINE", "NO_DATA", "NOT_IN_SERVICE"].includes(b.displayStatus)) {
+        clearMaps(); body.dataset.ready = "";
+        body.innerHTML = `<div class="state"><div class="halo">${ICON.clock}</div>
+          <h3>${b.displayStatus === "NOT_IN_SERVICE" ? "Not in service" : "Waiting for a GPS update"}</h3>
+          <p class="muted">${b.displayStatus === "NOT_IN_SERVICE" ? `${esc(clean(b.label))} is not running right now.`
+            : b.timestamp ? `${esc(clean(b.label))} last updated at ${esc(clock(b.timestamp))}.<br>Its current position is not confirmed.` : `${esc(clean(b.label))} has not sent a location yet.`}</p>
+          ${b.displayStatus !== "NOT_IN_SERVICE" ? `<div class="warn">${ICON.warn}<span>ETA unavailable until GPS updates resume.</span></div>` : ""}</div>
+          <button class="btn" data-go="#/map">See other buses</button>`;
+        return;
+      }
+      const stale = b.displayStatus === "STALE";
+      const mins = next?.etaMinutes == null ? "—" : next.etaMinutes < 1 ? "<1" : Math.round(next.etaMinutes);
+      const html = `${firstPaint ? mapCard(clean(route(b.routeId)?.name), true) : ""}
+        <div id="busdyn"><div class="card">
+          ${chip(b.displayStatus)}
+          <div style="font-weight:600;margin:12px 0 2px">Arriving at ${esc(clean(next?.name))}</div>
+          <div class="row"><span class="big ${stale ? "approx" : ""}">${stale ? "~" : ""}${mins} min</span><span class="muted">estimated arrival</span></div>
+          <div class="muted">Location ${esc(updatedText(age).toLowerCase())}</div>
+          ${stale ? `<div class="warn">${ICON.warn}<span>This position is ${age} s old, so the bus may have moved. Times are approximate.</span></div>` : ""}
+          <div class="facts"><div class="fact"><b>${b.speedKmh != null ? Math.round(b.speedKmh) + " km/h" : "—"}</b><span>Speed</span></div>
+            <div class="fact"><b>${esc(b.dataSource || "—")}</b><span>Data source</span></div></div>
+        </div>
+        ${next && after ? `<div class="label" style="margin-top:14px">Next stop</div><h2 style="margin:4px 0 14px">${esc(clean(next.name))} → ${esc(clean(after.name))}</h2>` : ""}
+        <div class="section-head"><h2>All stops on this route</h2></div>
+        ${d.stops.map((s) => `<button class="item" data-go="#/stop/${esc(s.stopId)}"><div class="grow"><div class="t">${esc(clean(s.name))}</div><div class="muted">Stop ${s.sequence}</div></div>${etaBlock({ ...s, etaIsApproximate: stale })}</button>`).join("")}
+        </div>
+        ${next ? `<button class="btn ${hasAlert(next.stopId, id) ? "on" : ""}" data-alert="${esc(next.stopId)}" data-alert-bus="${esc(id)}">${hasAlert(next.stopId, id) ? `Alert on for ${esc(clean(next.name))} · tap to cancel` : "Set arrival alert"}</button>` : ""}`;
+      if (firstPaint) { body.innerHTML = html; body.dataset.ready = "1"; mountMap($(".map", body), { routeId: b.routeId, focus: [b.latitude, b.longitude] }); }
+      else { const tmp = document.createElement("div"); tmp.innerHTML = html;
+        $("#busdyn").replaceWith($("#busdyn", tmp)); const ab = $("[data-alert]", body), nb = $("[data-alert]", tmp); if (ab && nb) ab.replaceWith(nb);
+        maps[0]?.m.panTo([b.latitude, b.longitude]); }
+    },
+  },
+
+  // S04 Routes & stops
+  routes: {
+    tab: "routes",
+    html: () => `${header("Routes & stops", "Explore the campus bus network.")}
+      <div class="body">
+        <div class="search">${ICON.search}<input id="q" placeholder="Search a route or stop" autocomplete="off"></div>
+        <div id="routelist"></div>
+        <div class="info">${ICON.info}<span>Route and stop names are examples. Final campus data will replace them.</span></div>
+      </div>`,
+    mount() { $("#q").addEventListener("input", () => views.routes.update()); },
+    update() {
+      const q = ($("#q")?.value || "").trim().toLowerCase();
+      const list = S.routes.filter((r) => !q || r.name.toLowerCase().includes(q) || r.stops.some((s) => s.name.toLowerCase().includes(q)));
+      $("#routelist").innerHTML = list.map((r) => {
+        const st = routeStatus(r.routeId);
+        return `<div class="card route" style="--c:${esc(r.colour)}" data-go="#/route/${esc(r.routeId)}">
+          <div class="row"><div class="grow"><h2>${esc(clean(r.name))}</h2></div>${st}</div>
+          <div class="row"><div class="muted" style="margin-top:6px">${r.isLoop ? "Loop" : "One way"} · ${r.stops.length} stops · ${(r.totalLengthM / 1000).toFixed(1)} km</div></div>
+          <div class="row"><button class="link">View stops and route ${ICON.chevron}</button></div></div>`;
+      }).join("") || `<div class="card muted">No route or stop matches "${esc(q)}".</div>`;
+    },
+  },
+
+  // S05 Route 1
+  route: {
+    tab: "routes",
+    html: (id) => { const r = route(id); if (!r) return notFound("route");
+      return `${header(clean(r.name), `${clean(r.description)} · ${r.stops.length} stops`, { back: true })}
+      <div class="body">
+        ${mapCard(`${clean(r.name)} · ${r.isLoop ? "Loop" : "One way"}`, true)}
+        <div class="section-head"><h2>Stops in travel order</h2></div>
+        <div class="timeline" style="--c:${esc(r.colour)}">${r.stops.map((s, i) => `<div class="stopline" data-go="#/stop/${esc(s.stopId)}">
+          <div class="node"></div><div><div class="t" style="font-weight:600">${esc(clean(s.name))}</div>
+          <div class="muted">${i === 0 ? "Start of route" : `${s.cumulativeDistanceM} m from start`}${i === r.stops.length - 1 && r.isLoop ? " · then back to " + esc(clean(r.stops[0].name)) : ""}</div></div></div>`).join("")}</div>
+        <div class="section-head"><h2>Buses on this route</h2></div>
+        <div id="routebuses"></div>
+      </div>`; },
+    mount(id) { mountMap($(".map"), { routeId: id }); },
+    update(id) {
+      const list = S.buses.filter((b) => b.routeId === id);
+      $("#routebuses").innerHTML = list.map(busItem).join("") || `<div class="card muted">No buses assigned to this route.</div>`;
+    },
+  },
+
+  // S06 Plan your trip
+  plan: {
+    tab: "plan",
+    html: () => { const opts = S.stops.map((s) => `<option value="${esc(s.stopId)}">${esc(clean(s.name))}</option>`).join("");
+      return `${header("Plan your trip", "Pick where you are and where you're going.")}
+      <div class="body"><div class="card">
+        <div class="label">From</div><select id="from">${opts}</select>
+        <div class="label">To</div><select id="to">${opts}</select>
+        <button class="btn" id="planBtn" style="margin:0">Find buses</button></div>
+        <div id="plan"></div></div>`; },
+    mount() { $("#to").selectedIndex = Math.min(2, S.stops.length - 1); $("#planBtn").onclick = () => views.plan.update(true); },
+    async update(force) {
+      const out = $("#plan"); if (!out || (!force && !out.dataset.ran)) return; out.dataset.ran = "1";
+      const from = $("#from").value, to = $("#to").value;
+      if (from === to) { out.innerHTML = `<div class="card muted">You're already there. Choose a different destination.</div>`; return; }
+      const usable = S.routes.filter((r) => r.stops.some((s) => s.stopId === from) && r.stops.some((s) => s.stopId === to));
+      if (!usable.length) { out.innerHTML = `<div class="state"><h3>No direct route</h3><p class="muted">No single route connects these stops. Try a stop on the same route.</p></div>`; return; }
+      const arr = await getJSON(`/stops/${from}/arrivals`); S.arrivalsAt[from] = Date.now();
+      out.innerHTML = usable.map((r) => {
+        const a = r.stops.find((s) => s.stopId === from), b = r.stops.find((s) => s.stopId === to);
+        const ride = b.cumulativeDistanceM - a.cumulativeDistanceM + (b.cumulativeDistanceM < a.cumulativeDistanceM ? r.totalLengthM : 0);
+        const rideMin = Math.max(1, Math.round(ride / (20000 / 60)));
+        const buses = arr.filter((x) => x.routeId === r.routeId);
+        return `<div class="section-head"><h2>${esc(clean(r.name))}</h2><span class="muted">ride ≈ ${rideMin} min · ${(ride / 1000).toFixed(1)} km</span></div>
+          ${buses.map((x) => `<button class="item" data-go="#/bus/${esc(x.busId)}"><div class="busicon ${esc(x.displayStatus)}">${ICON.bus()}</div>
+            <div class="grow"><div class="t">${esc(clean(x.label))}</div><div class="muted">Board at ${esc(clean(stop(from).name))}</div></div>${etaBlock(x)}</button>`).join("")
+            || `<div class="card muted">No buses on this route right now.</div>`}`;
+      }).join("") + `<p class="note">Ride time uses a 20 km/h average. All times are estimates.</p>`;
+    },
+  },
+
+  // S09 Your alerts
+  alerts: {
+    tab: "alerts",
+    html: () => `${header("Your alerts", `We'll tell you when a bus is about ${ALERT_MIN} min away.`)}
+      <div class="body" id="alertlist"></div>`,
+    mount() {},
+    update() {
+      $("#alertlist").innerHTML = alerts.length ? alerts.map((a) => `<div class="card"><div class="row">
+          <div class="busicon">${ICON.bus()}</div><div class="grow"><div class="t" style="font-weight:600">${esc(clean(stop(a.stopId)?.name))}</div>
+          <div class="muted">${a.busId ? esc(clean(bus(a.busId)?.label)) : "Any bus"} · ${ALERT_MIN} min before arrival</div></div></div>
+          <button class="btn secondary" style="margin:12px 0 0" data-alert="${esc(a.stopId)}" ${a.busId ? `data-alert-bus="${esc(a.busId)}"` : ""}>Remove alert</button></div>`).join("")
+        : `<div class="state"><div class="halo" style="background:var(--teal-soft)">${ICON.bus()}</div><h3>No alerts yet</h3>
+           <p class="muted">Open a stop or a bus and tap "Notify me before arrival".</p></div><button class="btn" data-go="#/map">Find a stop</button>`;
+    },
+  },
+};
+
+function busItem(b) {
+  return `<button class="item" data-go="#/bus/${esc(b.busId)}">
+    <div class="busicon ${esc(b.displayStatus)}">${ICON.bus(b.displayStatus === "ACTIVE" ? "#007F73" : b.displayStatus === "STALE" ? "#8D5700" : "#5F6B76")}</div>
+    <div class="grow"><div class="t">${esc(busName(b))}</div><div class="muted">${esc(updatedText(ageNow(b.ageSeconds, S.busesAt)))}</div></div>
+    ${chip(b.displayStatus)}</button>`;
+}
+function routeStatus(routeId) {
+  const list = S.buses.filter((b) => b.routeId === routeId).map((b) => b.displayStatus);
+  if (list.includes("ACTIVE")) return chip("ACTIVE");
+  if (list.includes("STALE")) return chip("STALE");
+  return `<span class="chip none"><span class="dot"></span>No live buses</span>`;
+}
+function notFound(what) { return `${header("Not found", "", { back: true })}<div class="body"><div class="card muted">That ${what} doesn't exist.</div></div>`; }
+
+// =====================================================================
+// Router and refresh loop
+// =====================================================================
+let current = { name: "map", id: null };
+function go(hash) { location.hash = hash; }
+function parse() {
+  const [, name = "map", id = null] = (location.hash || "#/map").split("/");
+  return { name: views[name] ? name : "map", id: id ? decodeURIComponent(id) : null };
+}
+function render() {
+  current = parse();
+  const v = views[current.name];
+  clearMaps();
+  $("#view").innerHTML = v.html(current.id);
+  document.querySelectorAll("#nav a").forEach((a) => a.classList.toggle("on", a.dataset.tab === v.tab));
+  if (!$(".top h1") || $(".top h1").textContent !== "Not found") { v.mount(current.id); safeUpdate(); }
+  window.scrollTo(0, 0);
+}
+async function safeUpdate() {
+  try { await views[current.name].update(current.id); } catch (e) { console.warn(e); }
+}
+window.addEventListener("hashchange", render);
+document.addEventListener("click", (e) => {
+  const back = e.target.closest("[data-back]");
+  if (back) { history.length > 1 ? history.back() : go("#/map"); return; }
+  const al = e.target.closest("[data-alert]");
+  if (al) { toggleAlert(al.dataset.alert, al.dataset.alertBus || null); return; }
+  const g = e.target.closest("[data-go]");
+  if (g) go(g.dataset.go);
+});
+
+async function refresh() {
+  try {
+    S.buses = await getJSON("/buses"); S.busesAt = Date.now();
+    // arrivals for every stop feed the home screen "Next bus" card
+    if (current.name === "map") {
+      await Promise.all(S.stops.map(async (s) => { S.arrivals[s.stopId] = await getJSON(`/stops/${s.stopId}/arrivals`); S.arrivalsAt[s.stopId] = Date.now(); }));
+    }
+    $("#offlineBar").style.display = "none";
+    maps.forEach(drawBusesOn);
+    await safeUpdate();
+    await checkAlerts();
+  } catch (e) {
+    $("#offlineBar").style.display = "block";
+  }
+}
+
+async function start() {
+  try {
+    [S.health, S.routes, S.stops, S.buses] = await Promise.all([getJSON("/health"), getJSON("/routes"), getJSON("/stops"), getJSON("/buses")]);
+    S.busesAt = Date.now();
+  } catch (e) { $("#offlineBar").style.display = "block"; }
+  if (!location.hash) location.replace("#/map");
+  render();
+  refresh();
+  setInterval(refresh, 3000);
+}
+start();
+</script>
+</body>
+</html>

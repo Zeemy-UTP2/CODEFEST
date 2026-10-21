@@ -1,0 +1,421 @@
+{
+  "_meta": {
+    "note": "DEMO/SIMULATED DATA. Coordinates approximate, not surveyed. Not a real live service.",
+    "version": "1.1"
+  },
+  "systemConfig": [
+    {
+      "key": "update_interval_s",
+      "value": 5,
+      "unit": "seconds",
+      "description": "Expected interval between GPS updates from the sender"
+    },
+    {
+      "key": "stale_after_s",
+      "value": 30,
+      "unit": "seconds",
+      "description": "Age above which a location is STALE (not shown as live)"
+    },
+    {
+      "key": "offline_after_s",
+      "value": 120,
+      "unit": "seconds",
+      "description": "Age above which the bus is treated as OFFLINE"
+    },
+    {
+      "key": "max_future_skew_s",
+      "value": 60,
+      "unit": "seconds",
+      "description": "Max allowed timestamp ahead of server clock"
+    },
+    {
+      "key": "max_jump_speed_kmh",
+      "value": 100,
+      "unit": "km/h",
+      "description": "Implied speed between consecutive updates above which an update is rejected"
+    },
+    {
+      "key": "default_avg_speed_kmh",
+      "value": 20,
+      "unit": "km/h",
+      "description": "Fallback average bus speed for ETA (Wafiy may tune)"
+    },
+    {
+      "key": "bbox_min_lat",
+      "value": 4.34,
+      "unit": "degrees",
+      "description": "Service-area bounding box (demo value, verify)"
+    },
+    {
+      "key": "bbox_max_lat",
+      "value": 4.43,
+      "unit": "degrees",
+      "description": "Service-area bounding box (demo value, verify)"
+    },
+    {
+      "key": "bbox_min_lng",
+      "value": 100.92,
+      "unit": "degrees",
+      "description": "Service-area bounding box (demo value, verify)"
+    },
+    {
+      "key": "bbox_max_lng",
+      "value": 101.02,
+      "unit": "degrees",
+      "description": "Service-area bounding box (demo value, verify)"
+    }
+  ],
+  "stops": [
+    {
+      "stopId": "STP-01",
+      "name": "Main Gate (Demo)",
+      "latitude": 4.379,
+      "longitude": 100.965,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-02",
+      "name": "Academic Block A (Demo)",
+      "latitude": 4.3825,
+      "longitude": 100.969,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-03",
+      "name": "Library (Demo)",
+      "latitude": 4.385,
+      "longitude": 100.9715,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-04",
+      "name": "Student Centre (Demo)",
+      "latitude": 4.387,
+      "longitude": 100.974,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-05",
+      "name": "Residential Village 1 (Demo)",
+      "latitude": 4.39,
+      "longitude": 100.977,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-06",
+      "name": "Residential Village 2 (Demo)",
+      "latitude": 4.388,
+      "longitude": 100.98,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "stopId": "STP-07",
+      "name": "Sports Complex (Demo)",
+      "latitude": 4.383,
+      "longitude": 100.976,
+      "active": true,
+      "dataOrigin": "DEMO"
+    }
+  ],
+  "routes": [
+    {
+      "routeId": "RTE-A",
+      "name": "Residential Loop (Demo)",
+      "description": "Main Gate to residential villages and back",
+      "colourHex": "#E53935",
+      "isLoop": true,
+      "totalLengthM": 4334,
+      "active": true,
+      "dataOrigin": "DEMO"
+    },
+    {
+      "routeId": "RTE-B",
+      "name": "Academic Shuttle (Demo)",
+      "description": "Main Gate, academic area, library and sports complex",
+      "colourHex": "#1E88E5",
+      "isLoop": true,
+      "totalLengthM": 2951,
+      "active": true,
+      "dataOrigin": "DEMO"
+    }
+  ],
+  "routeStops": [
+    {
+      "routeId": "RTE-A",
+      "sequence": 1,
+      "stopId": "STP-01",
+      "cumulativeDistanceM": 0,
+      "distanceToNextM": 616
+    },
+    {
+      "routeId": "RTE-A",
+      "sequence": 2,
+      "stopId": "STP-02",
+      "cumulativeDistanceM": 616,
+      "distanceToNextM": 410
+    },
+    {
+      "routeId": "RTE-A",
+      "sequence": 3,
+      "stopId": "STP-03",
+      "cumulativeDistanceM": 1026,
+      "distanceToNextM": 371
+    },
+    {
+      "routeId": "RTE-A",
+      "sequence": 4,
+      "stopId": "STP-04",
+      "cumulativeDistanceM": 1397,
+      "distanceToNextM": 492
+    },
+    {
+      "routeId": "RTE-A",
+      "sequence": 5,
+      "stopId": "STP-05",
+      "cumulativeDistanceM": 1889,
+      "distanceToNextM": 418
+    },
+    {
+      "routeId": "RTE-A",
+      "sequence": 6,
+      "stopId": "STP-06",
+      "cumulativeDistanceM": 2307,
+      "distanceToNextM": 2027
+    },
+    {
+      "routeId": "RTE-B",
+      "sequence": 1,
+      "stopId": "STP-01",
+      "cumulativeDistanceM": 0,
+      "distanceToNextM": 616
+    },
+    {
+      "routeId": "RTE-B",
+      "sequence": 2,
+      "stopId": "STP-02",
+      "cumulativeDistanceM": 616,
+      "distanceToNextM": 410
+    },
+    {
+      "routeId": "RTE-B",
+      "sequence": 3,
+      "stopId": "STP-03",
+      "cumulativeDistanceM": 1026,
+      "distanceToNextM": 570
+    },
+    {
+      "routeId": "RTE-B",
+      "sequence": 4,
+      "stopId": "STP-07",
+      "cumulativeDistanceM": 1596,
+      "distanceToNextM": 1355
+    }
+  ],
+  "routePoints": [
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 1,
+      "latitude": 4.379,
+      "longitude": 100.965,
+      "stopId": "STP-01"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 2,
+      "latitude": 4.38015,
+      "longitude": 100.967525,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 3,
+      "latitude": 4.3825,
+      "longitude": 100.969,
+      "stopId": "STP-02"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 4,
+      "latitude": 4.383375,
+      "longitude": 100.970625,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 5,
+      "latitude": 4.385,
+      "longitude": 100.9715,
+      "stopId": "STP-03"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 6,
+      "latitude": 4.385625,
+      "longitude": 100.97305,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 7,
+      "latitude": 4.387,
+      "longitude": 100.974,
+      "stopId": "STP-04"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 8,
+      "latitude": 4.38805,
+      "longitude": 100.97595,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 9,
+      "latitude": 4.39,
+      "longitude": 100.977,
+      "stopId": "STP-05"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 10,
+      "latitude": 4.38855,
+      "longitude": 100.9782,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 11,
+      "latitude": 4.388,
+      "longitude": 100.98,
+      "stopId": "STP-06"
+    },
+    {
+      "routeId": "RTE-A",
+      "pointSeq": 12,
+      "latitude": 4.38575,
+      "longitude": 100.97115,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 1,
+      "latitude": 4.379,
+      "longitude": 100.965,
+      "stopId": "STP-01"
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 2,
+      "latitude": 4.38015,
+      "longitude": 100.967525,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 3,
+      "latitude": 4.3825,
+      "longitude": 100.969,
+      "stopId": "STP-02"
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 4,
+      "latitude": 4.383375,
+      "longitude": 100.970625,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 5,
+      "latitude": 4.385,
+      "longitude": 100.9715,
+      "stopId": "STP-03"
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 6,
+      "latitude": 4.383325,
+      "longitude": 100.97345,
+      "stopId": null
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 7,
+      "latitude": 4.383,
+      "longitude": 100.976,
+      "stopId": "STP-07"
+    },
+    {
+      "routeId": "RTE-B",
+      "pointSeq": 8,
+      "latitude": 4.38265,
+      "longitude": 100.9699,
+      "stopId": null
+    }
+  ],
+  "buses": [
+    {
+      "busId": "BUS-01",
+      "label": "Demo Bus 1",
+      "routeId": "RTE-A",
+      "serviceState": "IN_SERVICE",
+      "dataOrigin": "DEMO"
+    },
+    {
+      "busId": "BUS-02",
+      "label": "Demo Bus 2",
+      "routeId": "RTE-B",
+      "serviceState": "IN_SERVICE",
+      "dataOrigin": "DEMO"
+    },
+    {
+      "busId": "BUS-03",
+      "label": "Demo Bus 3",
+      "routeId": null,
+      "serviceState": "OUT_OF_SERVICE",
+      "dataOrigin": "DEMO"
+    },
+    {
+      "busId": "BUS-04",
+      "label": "Demo Bus 4",
+      "routeId": "RTE-A",
+      "serviceState": "IN_SERVICE",
+      "dataOrigin": "DEMO"
+    }
+  ],
+  "busLocations": [
+    {
+      "busId": "BUS-01",
+      "latitude": 4.3825,
+      "longitude": 100.969,
+      "ageSeconds": 5,
+      "speedKmh": 18.0,
+      "accuracyM": 6.0,
+      "dataSource": "SIMULATED"
+    },
+    {
+      "busId": "BUS-02",
+      "latitude": 4.385,
+      "longitude": 100.9715,
+      "ageSeconds": 600,
+      "speedKmh": 0.0,
+      "accuracyM": 8.0,
+      "dataSource": "SIMULATED"
+    },
+    {
+      "busId": "BUS-04",
+      "latitude": 4.387,
+      "longitude": 100.974,
+      "ageSeconds": 60,
+      "speedKmh": 15.0,
+      "accuracyM": 9.0,
+      "dataSource": "SIMULATED"
+    }
+  ]
+}
